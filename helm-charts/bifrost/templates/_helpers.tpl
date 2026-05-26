@@ -953,6 +953,17 @@ false
 {{- if hasKey $client "allowOnAllVirtualKeys" }}
 {{- $_ := set $cc "allow_on_all_virtual_keys" $client.allowOnAllVirtualKeys }}
 {{- end }}
+{{- /* Map tlsConfig -> tls_config (only for http/sse connection types) */ -}}
+{{- if $client.tlsConfig }}
+{{- $tls := dict }}
+{{- if hasKey $client.tlsConfig "insecureSkipVerify" }}
+{{- $_ := set $tls "insecure_skip_verify" $client.tlsConfig.insecureSkipVerify }}
+{{- end }}
+{{- if $client.tlsConfig.caCertPem }}
+{{- $_ := set $tls "ca_cert_pem" $client.tlsConfig.caCertPem }}
+{{- end }}
+{{- $_ := set $cc "tls_config" $tls }}
+{{- end }}
 {{- /* Override connection_string with env var placeholder when secretRef is set */ -}}
 {{- if and $client.secretRef $client.secretRef.name }}
 {{- $envName := printf "BIFROST_MCP_%s_CONNECTION_STRING" (regexReplaceAll "[^A-Z0-9]+" (upper $client.name) "_") }}
