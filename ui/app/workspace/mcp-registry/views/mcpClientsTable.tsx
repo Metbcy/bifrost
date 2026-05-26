@@ -21,7 +21,7 @@ import { getErrorMessage, useDeleteMCPClientMutation, useReconnectMCPClientMutat
 import { MCPClient } from "@/lib/types/mcp";
 import { RbacOperation, RbacResource, useRbac } from "@enterprise/lib";
 import { ChevronLeft, ChevronRight, Loader2, MoreHorizontal, Plus, RefreshCcw, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MCPServersEmptyState } from "./mcpServersEmptyState";
 import MCPClientSheet from "./mcpClientSheet";
 
@@ -219,6 +219,18 @@ export default function MCPClientsTable({
 		setSelectedMCPClient(null);
 	};
 
+	const selectedMCPClientIndex = useMemo(
+		() => (selectedMCPClient ? mcpClients.findIndex((c) => c.config.client_id === selectedMCPClient.config.client_id) : -1),
+		[selectedMCPClient, mcpClients],
+	);
+
+	const handleDetailNavigate = (direction: "prev" | "next") => {
+		const newIndex = direction === "prev" ? selectedMCPClientIndex - 1 : selectedMCPClientIndex + 1;
+		if (newIndex >= 0 && newIndex < mcpClients.length) {
+			setSelectedMCPClient(mcpClients[newIndex]);
+		}
+	};
+
 	const handleEditTools = async () => {
 		setShowDetailSheet(false);
 		setSelectedMCPClient(null);
@@ -242,7 +254,14 @@ export default function MCPClientsTable({
 	return (
 		<div className="space-y-4">
 			{showDetailSheet && selectedMCPClient && (
-				<MCPClientSheet mcpClient={selectedMCPClient} onClose={handleDetailSheetClose} onSubmitSuccess={handleEditTools} />
+				<MCPClientSheet
+					mcpClient={selectedMCPClient}
+					onClose={handleDetailSheetClose}
+					onSubmitSuccess={handleEditTools}
+					onNavigate={handleDetailNavigate}
+					hasPrev={selectedMCPClientIndex > 0}
+					hasNext={selectedMCPClientIndex >= 0 && selectedMCPClientIndex < mcpClients.length - 1}
+				/>
 			)}
 			<AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
 				<AlertDialogContent>

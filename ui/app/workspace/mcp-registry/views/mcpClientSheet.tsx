@@ -21,6 +21,8 @@ import { getErrorMessage, useGetCoreConfigQuery, useGetVirtualKeysQuery, useUpda
 import { MCPClient, MCPVKConfig } from "@/lib/types/mcp";
 import { mcpClientUpdateSchema, type MCPClientUpdateSchema } from "@/lib/types/schemas";
 import { RbacOperation, RbacResource, useRbac } from "@enterprise/lib";
+import { SheetNavigationButtons } from "@/components/sheetNavigationButtons";
+import { useSheetNavigation } from "@/hooks/useSheetNavigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDown, ChevronRight, Info, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -31,6 +33,9 @@ interface MCPClientSheetProps {
 	mcpClient: MCPClient;
 	onClose: () => void;
 	onSubmitSuccess: () => void;
+	onNavigate?: (direction: "prev" | "next") => void;
+	hasPrev?: boolean;
+	hasNext?: boolean;
 }
 
 /** API sends tool_sync_interval as nanoseconds (Go time.Duration). Normalize to minutes for form/store. */
@@ -42,9 +47,17 @@ function toolSyncIntervalToMinutes(v: number | undefined | null): number {
 	return n;
 }
 
-export default function MCPClientSheet({ mcpClient, onClose, onSubmitSuccess }: MCPClientSheetProps) {
+export default function MCPClientSheet({ mcpClient, onClose, onSubmitSuccess, onNavigate, hasPrev = false, hasNext = false }: MCPClientSheetProps) {
 	const hasUpdateMCPClientAccess = useRbac(RbacResource.MCPGateway, RbacOperation.Update);
 	const [updateMCPClient, { isLoading: isUpdating }] = useUpdateMCPClientMutation();
+
+	const { prev: prevKeys, next: nextKeys } = useSheetNavigation({
+		enabled: true,
+		hasPrev,
+		hasNext,
+		onNavigate: (direction) => onNavigate?.(direction),
+	});
+
 	const { data: bifrostConfig } = useGetCoreConfigQuery({ fromDB: true });
 	const globalToolSyncInterval = bifrostConfig?.client_config?.mcp_tool_sync_interval ?? 10;
 	const { toast } = useToast();
@@ -357,6 +370,14 @@ export default function MCPClientSheet({ mcpClient, onClose, onSubmitSuccess }: 
 							</SheetTitle>
 							<SheetDescription>MCP server configuration and available tools</SheetDescription>
 						</div>
+						<SheetNavigationButtons
+							hasPrev={hasPrev}
+							hasNext={hasNext}
+							onNavigate={(dir) => onNavigate?.(dir)}
+							prevKeys={prevKeys}
+							nextKeys={nextKeys}
+							entityLabel="server"
+						/>
 					</div>
 				</SheetHeader>
 				<Form {...form}>
